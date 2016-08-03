@@ -1,0 +1,17 @@
+{
+  "name": "sphinx-container",
+  "version": "1.0.0",
+  "description": "Simple IoC Container with ES6 generator",
+  "main": "index.js",
+  "devDependencies": {
+    "chai": "^3.5.0",
+    "co-mocha": "^1.1.2",
+    "mocha": "^2.5.3"
+  },
+  "scripts": {
+    "test": "node ./node_modules/.bin/mocha tests",
+    "start": "npm install && npm test"
+  },
+  "author": "Ngoc To <ngoctv@sphinx-software.com>",
+  "license": "MIT"
+}
