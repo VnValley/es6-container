@@ -1,96 +1,109 @@
 'use strict';
 
-require('co-mocha');
-
-const chai   = require('chai');
-const assert = chai.assert;
-
 const Container = require('./../index');
+const chai      = require('chai');
+const sinon     = require('sinon');
+const EventEmitter = require('events').EventEmitter;
 
-describe('Container tests', () => {
+chai.use(require('chai-as-promised'));
 
-    it ('Container#instance() always the same instance', function* () {
-        let instance1 = Container.instance();
-        let instance2 = Container.instance();
+const assert    = chai.assert;
 
+describe('Container tests suite', () => {
 
-        assert.strictEqual(instance1, instance2);
+    let container = null;
+
+    beforeEach(() => {
+        container = new Container(new EventEmitter());
     });
 
-    it ('Container#constructor() always return a new instance', function* () {
-        let instance1 = new Container();
-        let instance2 = new Container();
+    describe('binding a dependency', () => {
 
-        assert.instanceOf(instance1, Container);
-        assert.instanceOf(instance2, Container);
-        assert.notEqual(instance1, instance2);
-    });
+        it('should return bounded dependency', async () => {
+            container.bind('foo', async () => {
+                return 'bar';
+            });
 
-    it ('Container#make can resolve a dependency as generator', function* () {
-        let c = new Container();
+            let resolved = await container.make('foo');
 
-        c.bind('Foo', function* () {
-            return 'Bar';
+            assert.equal(resolved, 'bar');
         });
 
-        let foo = yield c.make('Foo');
+        it('should return a new reference of dependency for each time resolve', async () => {
+            container.bind('ref', async () => {
+                return {};
+            });
 
-        assert.equal(foo, 'Bar');
-    });
+            let ref1 = await container.make('ref');
+            let ref2 = await container.make('ref');
 
-    it ('Container#make throws error when the dependency cannot be resolved', function* () {
-        let c = new Container();
-        try {
-            yield c.make('notExisted');
-        } catch (error) {
-            assert.instanceOf(error, Error);
-            assert.equal(error.toString(), 'Error: Could not resolve dependency [notExisted]');
-        }
-    });
 
-    it ('Container#make returns new instance each time called', function* () {
-        let c = new Container();
-
-        c.bind('Foo', function* () {
-            return {foo: 'bar'}
+            assert.notStrictEqual(ref1, ref2);
         });
 
-        let fooInstance1 = yield c.make('Foo');
-        let fooInstance2 = yield c.make('Foo');
+        it('should throw binding exception when resolving not existed dependency', async () => {
+            assert.isRejected(
+                container.make('notExisted'),
+                Error,
+                'E_BINDING: Could not resolve dependency [notExisted]'
+            );
+        });
 
-        assert.notStrictEqual(fooInstance1, fooInstance2);
+        it('can resolve dependency deeply', async () => {
+            container.bind('foo', async () => 'foo-dep');
+            container.bind('bar', async (c) => {
+                return {foo: await c.make('foo')};
+            });
+
+
+            let bar = await container.make('bar');
+
+            assert.deepEqual(bar, {foo: 'foo-dep'});
+        });
     });
 
-    it ('Container#make can resolve dependency deeply', function* () {
-        let c = new Container();
+    describe('binding a dependency as a singleton', () => {
+        it('always return a single instance', async () => {
+            container.singleton('ref', async () => {
+                return {};
+            });
 
-        c.bind('Foo', function* () {
-            return 'FooService';
+            let ref1 = await container.make('ref');
+            let ref2 = await container.make('ref');
+
+            assert.strictEqual(ref1, ref2);
+        });
+    });
+
+    describe('when resolve a dependency', () => {
+        it('should fire an event before resolve', async () => {
+            let callback = sinon.spy();
+
+            container.bind('foo', async () => 'bar');
+
+            container.making('foo', callback);
+
+            await container.make('foo');
+
+            assert.ok(callback.calledOnce);
+
+            await container.make('foo');
+
+            assert.ok(callback.calledTwice);
         });
 
-        c.bind('Bar', function* (c) {
-            return {
-                foo: yield c.make('Foo')
-            }
-        });
+        it('should fire an event after resolved a dependency, ' +
+            'and pass it as the callback argument', async() => {
 
-        let bar = yield c.make('Bar');
+            let callback = sinon.spy();
 
-        assert.deepEqual(bar, {
-            foo: 'FooService'
+            container.bind('foo', async () => 'bar');
+            container.made('foo', callback);
+
+            await container.make('foo');
+
+            assert.ok(callback.calledOnce);
+            assert.ok(callback.calledWithExactly('bar'));
         })
-    });
-
-    it ('Container#singleton resolve one instance only', function* () {
-        let c = new Container();
-
-        c.singleton('Foo', function* () {
-            return {foo: 'bar'}
-        });
-
-        let fooInstance1 = yield c.make('Foo');
-        let fooInstance2 = yield c.make('Foo');
-
-        assert.strictEqual(fooInstance1, fooInstance2);
-    });
+    })
 });
