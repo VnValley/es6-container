@@ -60,6 +60,19 @@ describe('Container tests suite', () => {
 
             assert.deepEqual(bar, {foo: 'foo-dep'});
         });
+
+        it('can resolve dependency deeply regardless of binding order', async () => {
+
+            container.bind('bar', async (c) => {
+                return {foo: await c.make('foo')};
+            });
+
+            container.bind('foo', async () => 'foo-dep');
+
+            let bar = await container.make('bar');
+
+            assert.deepEqual(bar, {foo: 'foo-dep'});
+        });
     });
 
     describe('binding a dependency as a singleton', () => {
