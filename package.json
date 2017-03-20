@@ -15,5 +15,8 @@
     "start": "npm install && npm test"
   },
   "author": "Ngoc To <ngoctv@sphinx-software.com>",
-  "license": "MIT"
+  "license": "MIT",
+  "engines" : {
+    "node" : "~7.7"
+  }
 }
