@@ -32,6 +32,19 @@ class Container {
     }
 
     /**
+     * Register a value as a dependency to the Container
+     *
+     * @param dependencyName
+     * @param value
+     * @return {Container}
+     */
+    value(dependencyName, value) {
+        this.resolved[dependencyName] = value;
+
+        return this;
+    }
+
+    /**
      * Register a dependency to the Container as a singleton
      *
      * @param {string} dependencyName

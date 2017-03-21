@@ -88,6 +88,14 @@ describe('Container tests suite', () => {
         });
     });
 
+    describe('binding a dependency as a value', () => {
+        it('don\'t need to resolve', async () => {
+            container.value('foo', 'bar');
+
+            assert.equal(await container.make('foo'), 'bar');
+        })
+    });
+
     describe('when resolve a dependency', () => {
         it('should fire an event before resolve', async () => {
             let callback = sinon.spy();
