@@ -34,7 +34,7 @@ class Container {
     /**
      * Register a value as a dependency to the Container
      *
-     * @param dependencyName
+     * @param {string} dependencyName
      * @param value
      * @return {Container}
      */
@@ -63,7 +63,7 @@ class Container {
     /**
      * Resolve a dependency
      *
-     * @param dependencyName
+     * @param {string} dependencyName
      * @returns {Promise.<*>}
      */
     async make(dependencyName) {
